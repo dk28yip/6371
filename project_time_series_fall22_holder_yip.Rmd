@@ -1,0 +1,82 @@
+---
+title: "time_series_hi"
+author: "Sydney Holder & Douglas Yip"
+date: "2022-11-08"
+output: html_document
+---
+```{r}
+#load packages
+library(tidyverse)
+library(vars)
+library(tswge)
+library(GGally)
+
+
+```
+
+```{r}
+hi <- read_csv("https://raw.githubusercontent.com/dk28yip/MSDS_6373_TS/main/hi_reduce_data.csv", show_col_types = FALSE)
+ 
+nrow(hi) #393 rows of data
+head(hi)
+ggpairs(hi[3:11]) #matrix of scatter plots
+
+
+
+```
+
+```{r}
+#visualation of data
+#visualize individual realizations
+
+#create individual time series
+#we will see how unemployment rates for our response variabale
+plotts.sample.wge(hi$unemployment_rate)
+plotts.sample.wge(hi$total_visitor_days)
+plotts.sample.wge(hi$domestic_visitor_days)
+
+```
+
+```{r}
+
+#overfit the realizaiton to look for specific peaks
+
+est.ar.wge(hi$unemployment_rate,p=20,method="burg")
+est.ar.wge(hi$total_visitor_days,p=20,method="burg")
+est.ar.wge(hi$domestic_visitor_days,p=20,method="burg")
+
+
+```
+
+```{r}
+#find best ARMA model
+#no difference model to look for best ARMA
+aic5.wge(hi$unemployment_rate,p=0:8,q=0:4,type = "bic")
+#AR(1) found as bestmodel
+
+#estimate model to get variance and to calculat ljung box
+est.ar1=est.ar.wge(hi$unemployment_rate,p=1)
+
+#Get white noise variance
+est.ar1$avar
+#var1.17
+
+#check1 test- visual check of residual
+plotts.sample.wge(est.ar1$res,arlimits = TRUE, periodogram=TRUE)
+
+#check2 Ljung-Box
+ljung.wge(est.ar1$res,p=2)
+# $K: 24 (default)
+# $chi.square: 28.50981
+# $df: 22
+# $pval: 0.1593
+
+ljung.wge(est.ar1$res,p=2,K=48)
+# $K: 48 
+# $chi.square: 42.31336
+# $df: 46
+# $pval: 0.62744
+
+#Ljung check FTR white noise
+
+```
